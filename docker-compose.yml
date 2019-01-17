@@ -1,0 +1,36 @@
+# https://docs.docker.com/compose/compose-file/
+version: '3.7'
+services:
+  captain_fact:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: ecto://captain_fact:captain_fact@postgres/captain_fact
+      HOSTNAME: localhost
+      PORT: 80
+      # mix phx.gen.secret
+      SECRET_KEY_BASE: fzBk8OEcI8thGxlypWPUqfR2w2WopdN8v8pmpuy2JNj2eerbYFnlecuVMrFPGYnW
+    labels:
+      - "traefik.frontend.rule=Host:api.faithfulword.app"
+      - "traefik.frontend.entryPoints=http,https"
+
+  postgres:
+    image: postgres:11.0-alpine
+    environment:
+      POSTGRES_DB: captain_fact
+      POSTGRES_PASSWORD: captain_fact
+      POSTGRES_USER: captain_fact
+    ports:
+      - 15432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data: {}
+
+networks:
+  default:
+    external:
+      name: web
+

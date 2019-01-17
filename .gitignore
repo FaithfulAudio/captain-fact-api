@@ -21,3 +21,4 @@ apps/*/priv/secrets/*
 
 # Elixir LS
 .elixir_ls
+*.DS_Store
