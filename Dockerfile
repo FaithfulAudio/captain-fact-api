@@ -34,7 +34,7 @@
 
 
 
-# docker build -t faithful_word:builder --target=builder .
+# docker build -t cf:builder --target=builder .
 
 FROM elixir:1.7.4-alpine as builder
 RUN apk add --no-cache \
@@ -47,18 +47,29 @@ RUN mix local.rebar --force && \
 WORKDIR /app
 ENV MIX_ENV=prod
 
-# docker build -t faithful_word:deps --target=deps .
+# docker build -t cf:deps --target=deps .
 FROM builder as deps
 COPY mix.* /app/
 # Explicit list of umbrella apps
 RUN mkdir -p \
-    /app/apps/faithful_word \
+    /app/apps/cf \
+    /app/apps/cf_atom_feed \
+    /app/apps/cf_graphql \
+    /app/apps/cf_jobs \
+    /app/apps/cf_opengraph \
+    /app/apps/db \
     /app/apps/cf_rest_api
-COPY apps/faithful_word/mix.* /app/apps/faithful_word/
+COPY apps/cf/mix.* /app/apps/cf/
+COPY apps/cf_atom_feed/mix.* /app/apps/cf_atom_feed/
+COPY apps/cf_graphql/mix.* /app/apps/cf_graphql/
+COPY apps/cf_jobs/mix.* /app/apps/cf_jobs/
+COPY apps/cf_opengraph/mix.* /app/apps/cf_opengraph/
+COPY apps/db/mix.* /app/apps/db/
 COPY apps/cf_rest_api/mix.* /app/apps/cf_rest_api/
+
 RUN mix do deps.get --only prod, deps.compile
 
-# docker build -t faithful_word:frontend --target=frontend .
+# docker build -t cf:frontend --target=frontend .
 FROM node:10.14-alpine as frontend
 WORKDIR /app
 COPY apps/cf_rest_api/assets/package*.json /app/
@@ -68,7 +79,7 @@ RUN npm ci
 COPY apps/cf_rest_api/assets /app
 RUN npm run deploy
 
-# docker build -t faithful_word:releaser --target=releaser .
+# docker build -t cf:releaser --target=releaser .
 FROM deps as releaser
 COPY . /app/
 COPY --from=frontend /priv/static apps/cf_rest_api/priv/static
@@ -76,11 +87,11 @@ RUN mix do phx.digest, release --env=prod --no-tar
 
 # docker run -it --rm elixir:1.7.3-alpine sh -c 'head -n1 /etc/issue'
 FROM alpine:3.8 as runner
-RUN addgroup -g 1000 faithful_word && \
+RUN addgroup -g 1000 cf && \
     adduser -D -h /app \
-      -G faithful_word \
+      -G cf \
       -u 1000 \
-      faithful_word
+      cf
 RUN apk add -U bash libssl1.0
 USER root
 WORKDIR /app
